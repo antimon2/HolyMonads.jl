@@ -23,6 +23,10 @@ end
     @test result_fmap1 == Right(123)
     @test typeof(fromright(result_fmap1, nothing)) === Int
 
+    result_fmap1′ = fmap(x -> parse(Int, x), Right("124"))
+    @test result_fmap1′ == Right(124)
+    @test typeof(fromright(result_fmap1′, nothing)) === Int
+
     result_fmap2 = Either.fmap(x -> parse(Int, x), Right("ERROR"))
     @test result_fmap2 isa Left{ArgumentError}
     @test typeof(fromleft(result_fmap2, nothing)) == ArgumentError
@@ -32,6 +36,7 @@ end
     @test typeof(fromleft(result_fmap3, nothing)) == String
 
     @test Either.mbind(x -> parseeither(Int, x), Right("123")) == Right(123)
+    @test mbind(x -> parseeither(Int, x), Right("124")) == Right(124)
     @test Either.mbind(x -> parseeither(Int, x), Right("ERROR")) isa Left{ArgumentError}
     @test Either.mbind(x -> parseeither(Int, x), Left("NoExecution")) == Left("NoExecution")
 
@@ -41,6 +46,13 @@ end
         return a + b
     end
     @test result_do1 == Right(3)
+
+    result_do1′ = Either.@do begin
+        a ← Right(1)
+        b ← parseeither(Int, "2")
+        return a + b
+    end
+    @test result_do1′ == Right(3)
 
     result_do2 = @do Either begin
         a ← Right(1)

@@ -12,12 +12,20 @@ using Test
     @test Maybe.fmap(x -> x + 1, Some(1)) == Some(2)
     @test Maybe.mbind(x -> Some(x + 1), Some(1)) == Some(2)
     @test Maybe.mbind(x -> Some(x + 1), nothing) === nothing
+
     result = @do Maybe begin
         a ← Some(1)
         b ← Some(2)
         return a + b
     end
     @test result == Some(3)
+
+    result′ = Maybe.@do begin
+        a ← Some(1)
+        b ← Some(2)
+        return a + b
+    end
+    @test result′ == Some(3)
 
     result2 = @maybe begin
         a ← Some(1)

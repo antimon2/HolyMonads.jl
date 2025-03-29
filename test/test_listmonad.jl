@@ -40,6 +40,14 @@ using Test
     result_do1_expected = [4, 5, 5, 6]
     @test result_do1 == result_do1_expected
 
+    result_do1′ = List(Int).@do begin
+        a ← [1, 2]
+        b ← [3, 4]
+        return a + b
+    end
+    result_do1′_expected = [4, 5, 5, 6]
+    @test result_do1′ == result_do1′_expected
+
     result_do2 = @do List begin
         a ← [1, 2]
         b ← [3, 4]
@@ -47,6 +55,14 @@ using Test
     end
     result_do2_expected = [4, 5, 5, 6]
     @test result_do2 == result_do2_expected
+
+    result_do2′ = List.@do begin
+        a ← [1, 2]
+        b ← [3, 4]
+        return a + b
+    end
+    result_do2′_expected = [4, 5, 5, 6]
+    @test result_do2′ == result_do2′_expected
 
     result_do3 = @list Int begin
         a ← [1, 2]
@@ -113,11 +129,19 @@ using Test
     result_liftM1 = liftM(x -> 2x + 1, List, [1, 2])
     @test result_liftM1 == [3, 5]
 
+    result_liftM1′ = List.liftM(x -> 2x + 1, [1, 2])
+    @test result_liftM1′ == [3, 5]
+
     result_liftM2 = liftM(+, List, [1, 2], [3, 4])
     @test result_liftM2 == [4, 5, 5, 6]
 
     result_liftM3 = liftM(+, List, [1, 2], [3, 4], [5, 6])
     @test result_liftM3 == [9, 10, 10, 11, 10, 11, 11, 12]
+
+    let ⊕=List.liftM(+)
+        @test [1, 2] ⊕ [3, 4] == [4, 5, 5, 6]
+        @test [1, 2] ⊕ [3, 4] ⊕ [5, 6] == [9, 10, 10, 11, 10, 11, 11, 12]
+    end
 end
 
 end  # module

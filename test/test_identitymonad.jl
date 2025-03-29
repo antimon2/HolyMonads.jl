@@ -17,6 +17,13 @@ using Test
     end
     @test result == 3
 
+    result′ = Identity.@do begin
+        a ← 1
+        b ← 2
+        return a + b
+    end
+    @test result′ == 3
+
     result2 = @identity begin
         a ← 1
         b ← 2

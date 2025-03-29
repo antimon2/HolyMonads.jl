@@ -80,7 +80,7 @@ function _desugar(M, lines::Vector{Any}, line::Expr, remain_lines...)
     end
 end
 
-liftM(f::Callable, M::MonadClass) = (args...) -> liftM(f, M, args...)
+liftM(f::Callable, M::MonadClass) = (a1, args...) -> liftM(f, M, a1, args...)
 liftM(f::Callable, M::MonadClass, t) = fmap(f, M, t)
 function liftM(f::Callable, M::MonadClass, t1, t2)
     @do M begin
@@ -126,7 +126,13 @@ struct FixM2{F, MT <: MonadClass} <: Function
 end
 (f::FixM2)(v, args...) = f.f(v, f.M, args...)
 
-# override `getproperty` to support `AnMonad.[unit, mjoin, fmap, mbind]`
+struct FixM3{F, MT <: MonadClass} <: Function
+    f::F
+    M::MT
+end
+(f::FixM3)(a1, a2, args...) = f.f(a1, a2, f.M, args...)
+
+# override `getproperty` to support `A_Monad.[unit, mjoin, fmap, mbind, @do, liftM]`
 function Base.getproperty(M::MonadClass, name::Symbol)
     if name in [:unit, :mjoin]
         _fn = getfield(HolyMonads, name)
@@ -136,12 +142,15 @@ function Base.getproperty(M::MonadClass, name::Symbol)
         _fn = getfield(HolyMonads, name)
         return FixM2(_fn, M)
     end
+    if name === Symbol("@do")
+        return FixM3(HolyMonads.var"@do", M)
+    end
     # return getfield(M, name)
     return @invoke getproperty(M::Any, name)
 end
-Base.propertynames(M::MonadClass) = ((@invoke Base.propertynames(M::Any))..., :unit, :mjoin, :fmap, :mbind, :liftM)
+Base.propertynames(M::MonadClass) = ((@invoke Base.propertynames(M::Any))..., :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM)
 
-# override `getproperty` to support `AnMonadPlus.[mzero, mplus]`
+# override `getproperty` to support `A_MonadPlus.[mzero, mplus]`
 function Base.getproperty(M::MonadPlusClass, name::Symbol)
     if name === :mzero
         return HolyMonads.mzero(M)

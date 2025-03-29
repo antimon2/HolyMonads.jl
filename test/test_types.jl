@@ -30,6 +30,7 @@ mplus(::DummyMonadPlusClass, a, b) = (a, b)
     @test mjoin(DummyMonad, :ok) === DummyMonad.mjoin(:ok) === :ok
     @test fmap(+, DummyMonad, 1) === DummyMonad.fmap(+, 1) === (+, 1)
     @test mbind(+, DummyMonad, 1) === DummyMonad.mbind(+, 1) === (+, 1)
+    @test liftM(+, DummyMonad, 1) === (+, 1)
 
     # CAUTION: `DummyMonadPlus` does not obey monad laws
     @test monadtype(DummyMonadPlus) === Any
