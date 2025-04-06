@@ -114,6 +114,17 @@ include("ListMonad.jl")
 include("EitherMonad.jl")
 
 # for `«Monad».«api»` notations
+@static if isdefined(Base, :Fix) # VERSION ≥ v"1.12.0-DEV.981"
+
+const FixM1{F, MT <: MonadClass} = Base.Fix{1, F, MT}
+FixM1(f::F, M::MT) where {F, MT <: MonadClass} = Base.Fix{1}(f, M)
+const FixM2{F, MT <: MonadClass} = Base.Fix{2, F, MT}
+FixM2(f::F, M::MT) where {F, MT <: MonadClass} = Base.Fix{2}(f, M)
+const FixM3{F, MT <: MonadClass} = Base.Fix{3, F, MT}
+FixM3(f::F, M::MT) where {F, MT <: MonadClass} = Base.Fix{3}(f, M)
+
+else
+
 struct FixM1{F, MT <: MonadClass} <: Function
     f::F
     M::MT
@@ -131,6 +142,8 @@ struct FixM3{F, MT <: MonadClass} <: Function
     M::MT
 end
 (f::FixM3)(a1, a2, args...) = f.f(a1, a2, f.M, args...)
+
+end
 
 # override `getproperty` to support `A_Monad.[unit, mjoin, fmap, mbind, @do, liftM]`
 function Base.getproperty(M::MonadClass, name::Symbol)
