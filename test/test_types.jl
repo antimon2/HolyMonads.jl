@@ -23,7 +23,7 @@ mplus(::DummyMonadPlusClass, a, b) = (a, b)
 
 @testset "types" begin
     # CAUTION: `DummyMonad` does not obey monad laws
-    @test monadtype(DummyMonad) === Any
+    @test monadtype(DummyMonad) === DummyMonad.monadtype === Any
     @test_throws ErrorException MonadClass(DummyMonad)
     @test DummyMonad.unit isa Function
     @test unit(DummyMonad, :ok) === DummyMonad.unit(:ok) === :ok

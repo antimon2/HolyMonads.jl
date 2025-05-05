@@ -5,7 +5,7 @@ using HolyMonads.IdentityMonad
 using Test
 
 @testset "IdentityMonad" begin
-    @test monadtype(Identity) <: Any
+    @test Identity.monadtype <: Any
     @test Identity.unit(1) == Identity(1) == 1
     @test Identity.mjoin(1) == 1
     @test Identity.fmap(x -> x + 1, 1) == 2

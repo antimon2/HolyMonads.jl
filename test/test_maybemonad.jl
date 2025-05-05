@@ -5,7 +5,7 @@ using HolyMonads.MaybeMonad
 using Test
 
 @testset "MaybeMonad" begin
-    @test monadtype(Maybe) <: Union{Some, Nothing}
+    @test Maybe.monadtype <: Union{Some, Nothing}
     @test MonadClass(Some(1)) === Maybe
     @test MonadClass(nothing) === Maybe
     @test Maybe.unit(1) == Some(1)

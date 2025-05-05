@@ -147,6 +147,9 @@ end
 
 # override `getproperty` to support `A_Monad.[unit, mjoin, fmap, mbind, @do, liftM]`
 function Base.getproperty(M::MonadClass, name::Symbol)
+    if name === :monadtype
+        return HolyMonads.monadtype(M)
+    end
     if name in [:unit, :mjoin]
         _fn = getfield(HolyMonads, name)
         return FixM1(_fn, M)
@@ -161,7 +164,8 @@ function Base.getproperty(M::MonadClass, name::Symbol)
     # return getfield(M, name)
     return @invoke getproperty(M::Any, name)
 end
-Base.propertynames(M::MonadClass) = ((@invoke Base.propertynames(M::Any))..., :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM)
+Base.propertynames(M::MonadClass) = 
+    ((@invoke Base.propertynames(M::Any))..., :monadtype, :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM)
 
 # override `getproperty` to support `A_MonadPlus.[mzero, mplus]`
 function Base.getproperty(M::MonadPlusClass, name::Symbol)

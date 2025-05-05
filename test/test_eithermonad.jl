@@ -11,7 +11,7 @@ catch err
 end
 
 @testset "EitherMonad" begin
-    @test monadtype(Either) <: HolyMonads.EitherMonad.EitherType
+    @test Either.monadtype <: HolyMonads.EitherMonad.EitherType
     @test MonadClass(Right(1)) === Either
     @test MonadClass(Left(0)) === Either
 

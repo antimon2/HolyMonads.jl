@@ -5,7 +5,7 @@ using HolyMonads.ListMonad
 using Test
 
 @testset "ListMonad" begin
-    @test monadtype(List) <: AbstractVector
+    @test List.monadtype <: AbstractVector
     @test MonadClass(typeof([1, 2])) === List(Int)
 
     @test List.unit(1) == [1]

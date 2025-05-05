@@ -25,7 +25,7 @@ mplus(::SimpleMonadClass, a, b) = @do SimpleMonad begin
 end
 
 @testset "monad-laws" begin
-    @test monadtype(SimpleMonad) <: SimpleWrapper
+    @test SimpleMonad.monadtype <: SimpleWrapper
     @test MonadClass(typeof(SimpleWrapper(1))) === SimpleMonad
     unit_1 = SimpleMonad.unit(1)
     @test unit_1 == unit(SimpleMonad, 1) == SimpleWrapper(1)
