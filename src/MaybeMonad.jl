@@ -9,12 +9,14 @@ struct MaybeClass <: HolyMonads.MonadPlusClass end
 const Maybe = MaybeClass()
 const MaybeType{T} = Union{Some{T}, Nothing}
 
-HolyMonads.monadtype(::MaybeClass) = MaybeType
+HolyMonads.monadtype(::Type{MaybeClass}) = MaybeType
 HolyMonads.MonadClass(::Type{<:MaybeType}) = Maybe
 
-# unit/mzero
+# unit/mzero/mplus
 HolyMonads.unit(::MaybeClass, value) = Some(value)
 HolyMonads.mzero(::MaybeClass) = nothing
+HolyMonads.mplus(::MaybeClass, a::MaybeType, _b) = a
+HolyMonads.mplus(::MaybeClass, ::Nothing, b::MaybeType) = b
 
 # mbind
 HolyMonads.mbind(f::Callable, ::MaybeClass, m) = f(m)  # for useful reason

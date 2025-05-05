@@ -12,6 +12,11 @@ using Test
     @test Maybe.fmap(x -> x + 1, Some(1)) == Some(2)
     @test Maybe.mbind(x -> Some(x + 1), Some(1)) == Some(2)
     @test Maybe.mbind(x -> Some(x + 1), nothing) === nothing
+    @test Maybe.mzero === nothing
+    @test Maybe.mplus(Some(1), Some(2)) === Some(1)
+    @test Maybe.mplus(Some(1), nothing) === Some(1)
+    @test Maybe.mplus(nothing, Some(2)) === Some(2)
+    @test Maybe.mplus(nothing, nothing) === nothing
 
     result = @do Maybe begin
         a ← Some(1)

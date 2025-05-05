@@ -12,8 +12,8 @@ const List = _ListClassBottom()
 
 const ListType{T} = AbstractVector{T}
 
-HolyMonads.monadtype(::_ListClassBottom) = ListType
-HolyMonads.monadtype(::ListClass{T}) where T = ListType{T}
+HolyMonads.monadtype(::Type{_ListClassBottom}) = ListType
+HolyMonads.monadtype(::Type{ListClass{T}}) where T = ListType{T}
 HolyMonads.MonadClass(::Type{<:ListType}) = List
 HolyMonads.MonadClass(::Type{<:ListType{T}}) where T = List(T)
 
