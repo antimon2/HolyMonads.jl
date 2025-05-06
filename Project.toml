@@ -1,7 +1,7 @@
 name = "HolyMonads"
 uuid = "70806467-20d4-4ce4-83fe-6acddec6625c"
 authors = ["GOTOH Shunsuke <antimon2.me@gmail.com> and contributors"]
-version = "0.1.0-DEV"
+version = "0.1.0"
 
 [compat]
 julia = "1.10"
