@@ -1,3 +1,8 @@
+"""
+    HolyMonads.ListMonad
+
+A module including `List` monad and related definitions.
+"""
 module ListMonad
 
 import ..HolyMonads
@@ -7,9 +12,25 @@ export List, @list
 
 struct ListClass{T} <: HolyMonads.MonadPlusClass end
 const _ListClassBottom = ListClass{Union{}}
+"""
+    List
+
+List MonadClass.
+
+---
+
+    List(T)
+
+List MonadClass with eltype `T`.
+"""
 const List = _ListClassBottom()
 (::_ListClassBottom)(::Type{T}) where T = ListClass{T}()
 
+"""
+    ListType{T}
+
+List context type with element type `T`, an alias of `AbstractVector{T}`.
+"""
 const ListType{T} = AbstractVector{T}
 
 HolyMonads.monadtype(::Type{_ListClassBottom}) = ListType
@@ -53,6 +74,12 @@ HolyMonads.mzero(::ListClass{T}) where T = T[]
 HolyMonads.mplus(::_ListClassBottom, a, b) = HolyMonads.mjoin(List, [a, b])
 HolyMonads.mplus(::ListClass{T}, a, b) where T = HolyMonads.mjoin(List(T), [a, b])
 
+"""
+    @list begin ～ end
+    @list() do ～ end
+
+Alias for `@do List begin ～ end`.
+"""
 macro list(ex)
     if Base.is_expr(ex, :(->))
         # Do block syntax
@@ -62,6 +89,12 @@ macro list(ex)
     end
 end
 
+"""
+    @list T begin ～ end
+    @list(T) do ～ end
+
+Alias for `@do List(T) begin ～ end`.
+"""
 macro list(ex1, ex2)
     if Base.is_expr(ex1, :(->))
         # Do block syntax

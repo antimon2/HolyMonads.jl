@@ -1,53 +1,226 @@
 module HolyMonads
 
-# import Base: mbind, :(==)
 using Base: Callable
 
 export MonadClass, MonadPlusClass, monadtype, unit, mjoin, fmap, mbind, mzero, mplus, @do, liftM
 
 # supertype of MonadClass-trait
+"""
+    MonadClass
+
+Abstract type for monad classes.
+"""
 abstract type MonadClass end
 
 # supertype of MonadPlus-trait
+"""
+    MonadPlusClass
+
+Abstract type for monad classes with `mzero` and `mplus` operations.
+"""
 abstract type MonadPlusClass <: MonadClass end
 
 # MonadClass APIs
 
 # type constructor
+"""
+    monadtype(::Type{MT}) where {MT <: MonadClass}
+    monadtype(::MT) where {MT <: MonadClass}
+    (M::MT).monadtype
+
+Returns the corresponding monadic context type for specified monad class.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+juila> using HolyMonads.MaybeMonad
+
+julia> monadtype(Maybe) === Maybe.monadtype === MaybeMonad.MaybeType
+true
+```
+"""
 monadtype(::Type{MT}) where {MT <: MonadClass} = Union{}  # must be implemented with subtype of `MonadClass`
 @inline monadtype(::MT) where {MT <: MonadClass} = monadtype(MT)
+
 # type classifier
+"""
+    MonadClass(::Type{T}) where {T}
+    MonadClass(::T) where {T}
+
+Returns the corresponding monad class for specified monad type.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+juila> using HolyMonads.MaybeMonad
+
+julia> MonadClass(Some(1)) === MonadClass(Nothing) === Maybe
+true
+```
+"""
 MonadClass(::Type{T}) where {T} = error(lazy"$T is NOT assigned to any `MonadClass` type")  # must be implemented with subtype of `MonadClass`
 @inline MonadClass(::T) where {T} = MonadClass(T)
 
-# MonadClass M: x -> M x  # `unit` (or `return`)
+"""
+    unit(::MT, value) where {MT <: MonadClass}
+    (M::MonadClass).unit(value)
+
+Returns the monadic context of the specified value.  
+(unit :: MonadClass M: x -> M x)  
+(a.k.a. `return` or `pure`)
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> unit(Maybe, 1) === Maybe.unit(1) === Some(1)
+true
+```
+"""
 unit(::MT, value) where {MT <: MonadClass} = monadtype(MT)(value)
 
-# MonadClass M: M (M x) -> M x  # `join`
+"""
+    mjoin(M::MonadClass, value)
+    (M::MonadClass).mjoin(value)
+
+Flattens the nested monadic context.  The argument `value` must be a monadic context.
+(mjoin :: MonadClass M: M (M x) -> M x)
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> mjoin(Maybe, Some(Some(1))) === Maybe.mjoin(Some(Some(1))) === Some(1)
+true
+```
+"""
 mjoin(t) = mjoin(MonadClass(t), t)
 mjoin(M::MonadClass, t) = mbind(identity, M, t::monadtype(M))::monadtype(M)
 
-# MonadClass M: (x -> y) -> M x -> M y  # `fmap`
+"""
+    fmap(f::Callable, M::MonadClass, t)
+    (M::MonadClass).fmap(f, t)
+
+Returns the monadic context of the result of applying `f` to the value in the monadic context `t`.  
+You can use Julia's `do` syntax to pass the function `f` as a block.
+(fmap :: MonadClass M: (x -> y) -> M x -> M y)
+(a.k.a. `flatmap`)
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> fmap(Maybe, Some(1)) do x
+           x + 1
+       end === Maybe.fmap(x -> x + 1, Some(1)) === Some(2)
+true
+```
+"""
 fmap(f::Callable, t) = fmap(f, MonadClass(t), t)
 fmap(f::Callable, M::MonadClass, t) = mbind(M, t::monadtype(M)) do x
     unit(M, f(x))
 end
 
-# MonadClass M: M x -> (x -> M y) -> M y  # `bind`
+"""
+    mbind(f::Callable, M::MonadClass, t)
+    (M::MT).mbind(f, t)
+
+Returns the monadic context of the result of applying `f` to the value in the monadic context `t`.
+You can use Julia's `do` syntax to pass the function `f` as a block.
+(mbind :: MonadClass M: (x -> M y) -> M x -> M y)
+(a.k.a. `bind`)
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> mbind(Maybe, Some(1)) do x
+           unit(Maybe, x + 1)
+       end === Maybe.mbind(x -> Maybe.unit(x + 1), Some(1)) === Some(2)
+true
+```
+"""
 mbind(f::Callable, t) = mbind(f, MonadClass(t), t)
 mbind(f::Callable, M::MonadClass, t) = mjoin(M, fmap(f, M, t::monadtype(M)))
 
 # MonadPlus APIs
-# MonadPlus M: M x  # `mzero`
+"""
+    mzero(M::MonadPlusClass)
+    (M::MonadPlusClass).mzero
+
+Returns the monadic context of the zero element.
+(mzero :: MonadPlusClass M: M x)
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> mzero(Maybe) === Maybe.mzero === nothing
+true
+```
+"""
 function mzero end
-# MonadPlus M: M x -> M x -> M x  # `mplus`
+
+"""
+    mplus(M::MonadPlusClass, a, b)
+    (M::MonadPlusClass).mplus(a, b)
+
+Returns the monadic context of the result of combining `a` and `b`.
+(mplus :: MonadPlusClass M: M x -> M x -> M x)
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> mplus(Maybe, Some(1), Some(2)) === Maybe.mplus(Some(1), Some(2)) === Some(1)
+true
+```
+"""
 function mplus end
 
 # do syntax
 """
-    @do MonadClass block
+    @do Monad block
+    Monad.@do block
 
 do notation for monads. a.k.a. computation expressions.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> result = Maybe.@do begin
+           a ← Some(1)
+           b ← Some(2)
+           return a + b
+       end
+Some(3)
+```
 """
 macro var"do"(M, ex)
     _monad_do(esc(M), ex)
@@ -80,6 +253,46 @@ function _desugar(M, lines::Vector{Any}, line::Expr, remain_lines...)
     end
 end
 
+"""
+    liftM(f::Callable, M::MonadClass, args...)
+    (M::MonadClass).liftM(f, args...)
+
+Lifts a function `f` to a monadic context.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> liftM(-, Maybe, Some(1)) === Maybe.liftM(-, Some(1)) === Some(-1)
+true
+
+julia> Maybe.liftM(+, Some(1), Some(2), Some(3))
+Some(6)
+```
+
+---
+
+    liftM(op, M::MonadClass)
+    (M::MonadClass).liftM(op)
+
+Returns a lifted operator of `op` to a monadic context.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> let ⊕ = Maybe.liftM(+)
+           Some(1) ⊕ Some(2) ⊕ Some(3)
+       end
+Some(6)
+```
+"""
 liftM(f::Callable, M::MonadClass) = (a1, args...) -> liftM(f, M, a1, args...)
 liftM(f::Callable, M::MonadClass, t) = fmap(f, M, t)
 function liftM(f::Callable, M::MonadClass, t1, t2)
@@ -145,7 +358,7 @@ end
 
 end
 
-# override `getproperty` to support `A_Monad.[unit, mjoin, fmap, mbind, @do, liftM]`
+# override `getproperty` to support `A_Monad.[monadtype, unit, mjoin, fmap, mbind, @do, liftM]`
 function Base.getproperty(M::MonadClass, name::Symbol)
     if name === :monadtype
         return HolyMonads.monadtype(M)
@@ -179,5 +392,8 @@ function Base.getproperty(M::MonadPlusClass, name::Symbol)
     return @invoke getproperty(M::MonadClass, name)
 end
 Base.propertynames(M::MonadPlusClass) = ((@invoke Base.propertynames(M::MonadClass))..., :mzero, :mplus)
+
+# to support `@doc A_Monad.[unit, mjoin, fmap, mbind, @do, liftM, monadtype, mzero, mplus]`
+Base.Docs.Binding(::MonadClass, name::Symbol) = Base.Docs.Binding(HolyMonads, name)
 
 end
