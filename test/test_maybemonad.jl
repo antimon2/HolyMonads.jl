@@ -47,4 +47,15 @@ using Test
     @test result3 === nothing
 end
 
+getmaybe(dic::AbstractDict, key) = haskey(dic, key) ? Maybe.unit(getindex(dic, key)) : Maybe.mzero
+
+@testset "getmaybe" begin
+
+    dic = Dict(:a => 1, :b => 2)
+    @test getmaybe(dic, :a) == Some(1)
+    @test getmaybe(dic, :b) == Some(2)
+    @test getmaybe(dic, :c) === nothing
+
+end
+
 end  # module

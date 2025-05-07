@@ -202,10 +202,12 @@ function mplus end
 
 # do syntax
 """
+    @do block
     @do Monad block
     Monad.@do block
 
-do notation for monads. a.k.a. computation expressions.
+do notation for monads. a.k.a. computation expressions.  
+If the context in the `block` body is clear, `Monad` can be omitted.
 
 # Example
 
@@ -214,7 +216,15 @@ julia> using HolyMonads
 
 julia> using HolyMonads.MaybeMonad
 
-julia> result = Maybe.@do begin
+julia> result = @do begin
+           a ← Some(1)
+           b ← Some(2)
+           return a + b
+       end
+Some(3)
+
+julia> # same as above
+       result = Maybe.@do begin
            a ← Some(1)
            b ← Some(2)
            return a + b
@@ -222,8 +232,39 @@ julia> result = Maybe.@do begin
 Some(3)
 ```
 """
+macro var"do"(ex)
+    _monad_do_wo_monadclass(ex)
+end
 macro var"do"(M, ex)
     _monad_do(esc(M), ex)
+end
+
+function _monad_do_wo_monadclass(ex)
+    org_lines = Base.is_expr(ex, :block) ? ex.args : Any[ex]
+    lines = _desugar_wo_monadclass(Any[], org_lines...)
+    Expr(:let, Expr(:block), Expr(:block, lines...))
+end
+
+_desugar_wo_monadclass(lines::Vector{Any}) = lines
+_desugar_wo_monadclass(lines::Vector{Any}, line, remain_lines...) =
+    _desugar_wo_monadclass(push!(lines, line), remain_lines...)
+function _desugar_wo_monadclass(lines::Vector{Any}, line::Expr, remain_lines...)
+    _Self = @__MODULE__  # == HolyMonads
+    if line.head === :call && line.args[1] === :(←)
+        # mbind
+        body = Expr(:block, remain_lines...)
+        result = esc(quote
+            rightval=$(line.args[3])
+            M = $_Self.MonadClass(rightval)
+            mbind(M, rightval) do $(line.args[2])
+                $_Self.@do M $body
+            end
+        end)
+        push!(lines, result)
+    else
+        # TODO: support other expressions
+        _desugar_wo_monadclass(M, push!(lines, line), remain_lines...)
+    end
 end
 
 function _monad_do(M, ex)
