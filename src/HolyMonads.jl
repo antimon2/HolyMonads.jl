@@ -355,6 +355,53 @@ function liftM(f::Callable, M::MonadClass, args::Vararg{T, N}) where {T, N}
     _rec(f, M, args, N, 1)
 end
 
+"""
+    ispure(t)
+    ispure(::MT, t)
+
+Utility function to determine if the monadic context `t` is pure, i.e., contextual.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> ispure(Maybe, Some(1)) === ispure(Some(1)) === true
+true
+
+julia> ispure(Maybe, nothing) === ispure(nothing) === false
+true
+```
+"""
+ispure(t) = ispure(MonadClass(t), t)
+ispure(::MT, t) where {MT <: MonadClass} = (t::monadtype(MT); true)  # return. true for default implementation.
+
+"""
+    unpure(t)
+    unpure(::MT, t)
+
+Utility function to extract value wrapped by the monadic context.  
+Throws an error if `t` is not pure.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> unpure(Maybe, Some(1)) == unpure(Some(1)) == 1
+true
+```
+"""
+unpure(t) = unpure(MonadClass(t), t)
+unpure(::MT, t::M) where {MT <: MonadClass, M} = (t::monadtype(MT); error(lazy"Not supported for MonadClass $(MT) and monadtype $(M)"))
+
+# monad iterator
+include("iterator.jl")
+
 # Identity MonadClass
 include("IdentityMonad.jl")
 

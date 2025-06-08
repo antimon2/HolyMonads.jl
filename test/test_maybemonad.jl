@@ -12,6 +12,10 @@ using Test
     @test Maybe.fmap(x -> x + 1, Some(1)) == Some(2)
     @test Maybe.mbind(x -> Some(x + 1), Some(1)) == Some(2)
     @test Maybe.mbind(x -> Some(x + 1), nothing) === nothing
+    @test HolyMonads.ispure(Some(1)) === true
+    @test HolyMonads.unpure(Some(1)) === 1
+    @test HolyMonads.ispure(nothing) === false
+    @test_throws ErrorException HolyMonads.unpure(nothing)
     @test Maybe.mzero === nothing
     @test Maybe.mplus(Some(1), Some(2)) === Some(1)
     @test Maybe.mplus(Some(1), nothing) === Some(1)

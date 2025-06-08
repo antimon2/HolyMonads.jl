@@ -10,6 +10,8 @@ using Test
     @test Identity.mjoin(1) == 1
     @test Identity.fmap(x -> x + 1, 1) == 2
     @test Identity.mbind(x -> Identity(x + 1), 1) == 2
+    @test HolyMonads.ispure(Identity, 1) === true
+    @test HolyMonads.unpure(Identity, 1) === 1
     result = @do Identity begin
         a ← 1
         b ← 2

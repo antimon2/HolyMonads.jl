@@ -42,6 +42,11 @@ HolyMonads.mbind(f::Callable, ::MaybeClass, m) = f(m)  # for useful reason
 HolyMonads.mbind(f::Callable, ::MaybeClass, m::Some) = f(something(m))
 HolyMonads.mbind(::Callable, ::MaybeClass, ::Nothing) = HolyMonads.mzero(Maybe)  # === nothing
 
+# ispure/unpure
+HolyMonads.ispure(::MaybeClass, ::Some) = true
+HolyMonads.unpure(::MaybeClass, m::Some) = something(m)
+HolyMonads.ispure(::MaybeClass, ::Nothing) = false
+
 """
     @maybe begin ～ end
     @maybe() do ～ end

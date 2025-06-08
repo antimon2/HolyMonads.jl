@@ -6,6 +6,7 @@ A module including `List` monad and related definitions.
 module ListMonad
 
 import ..HolyMonads
+using HolyMonads.MonadIterators: MonadIterator
 using Base: Callable
 
 export List, @list
@@ -73,6 +74,13 @@ HolyMonads.mzero(::_ListClassBottom) = Any[]
 HolyMonads.mzero(::ListClass{T}) where T = T[]
 HolyMonads.mplus(::_ListClassBottom, a, b) = HolyMonads.mjoin(List, [a, b])
 HolyMonads.mplus(::ListClass{T}, a, b) where T = HolyMonads.mjoin(List(T), [a, b])
+
+# ispure/unpure
+HolyMonads.ispure(::ListClass, m::ListType) = !isempty(m)
+HolyMonads.unpure(::ListClass, m::ListType) = first(m)
+
+# delegate monad-iterate to default implementation
+Base.iterate(mi::MonadIterator{<:ListClass, <:ListType}, state...) = iterate(mi.m, state...)
 
 """
     @list begin ～ end

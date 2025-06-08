@@ -40,6 +40,11 @@ end
     @test Either.mbind(x -> parseeither(Int, x), Right("ERROR")) isa Left{ArgumentError}
     @test Either.mbind(x -> parseeither(Int, x), Left("NoExecution")) == Left("NoExecution")
 
+    @test HolyMonads.ispure(Right(1)) === true
+    @test HolyMonads.unpure(Right(1)) === 1
+    @test HolyMonads.ispure(Left("NG")) === false
+    @test_throws ErrorException HolyMonads.unpure(Left("NG"))
+
     result_do1 = @do Either begin
         a ← Right(1)
         b ← parseeither(Int, "2")
