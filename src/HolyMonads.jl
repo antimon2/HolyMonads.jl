@@ -3,6 +3,7 @@ module HolyMonads
 using Base: Callable
 
 export MonadClass, MonadPlusClass, monadtype, unit, mjoin, fmap, mbind, mzero, mplus, @do, liftM
+export miterator, @for
 
 # supertype of MonadClass-trait
 """
@@ -263,7 +264,7 @@ function _desugar_wo_monadclass(lines::Vector{Any}, line::Expr, remain_lines...)
         push!(lines, result)
     else
         # TODO: support other expressions
-        _desugar_wo_monadclass(M, push!(lines, line), remain_lines...)
+        _desugar_wo_monadclass(push!(lines, line), remain_lines...)
     end
 end
 
@@ -401,6 +402,7 @@ unpure(::MT, t::M) where {MT <: MonadClass, M} = (t::monadtype(MT); error(lazy"N
 
 # monad iterator
 include("iterator.jl")
+import .MonadIterators: miterator, @for
 
 # Identity MonadClass
 include("IdentityMonad.jl")
