@@ -453,7 +453,7 @@ function Base.getproperty(M::MonadClass, name::Symbol)
     if name === :monadtype
         return HolyMonads.monadtype(M)
     end
-    if name in [:unit, :mjoin]
+    if name in [:unit, :mjoin, :miterator]
         _fn = getfield(HolyMonads, name)
         return FixM1(_fn, M)
     end
@@ -461,14 +461,16 @@ function Base.getproperty(M::MonadClass, name::Symbol)
         _fn = getfield(HolyMonads, name)
         return FixM2(_fn, M)
     end
-    if name === Symbol("@do")
-        return FixM3(HolyMonads.var"@do", M)
+    if name in [Symbol("@do"), Symbol("@for")]
+        _macro = getfield(HolyMonads, name)
+        return FixM3(_macro, M)
     end
     # return getfield(M, name)
     return @invoke getproperty(M::Any, name)
 end
 Base.propertynames(M::MonadClass) = 
-    ((@invoke Base.propertynames(M::Any))..., :monadtype, :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM)
+    ((@invoke Base.propertynames(M::Any))..., :monadtype, :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM,
+        :miterator, Symbol("@for"))
 
 # override `getproperty` to support `A_MonadPlus.[mzero, mplus]`
 function Base.getproperty(M::MonadPlusClass, name::Symbol)
@@ -476,7 +478,6 @@ function Base.getproperty(M::MonadPlusClass, name::Symbol)
         return HolyMonads.mzero(M)
     end
     if name === :mplus
-        # return (args...) -> HolyMonads.mplus(M, args...)
         return FixM1(HolyMonads.mplus, M)
     end
     return @invoke getproperty(M::MonadClass, name)
