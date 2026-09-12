@@ -8,7 +8,7 @@ module EitherMonad
 import ..HolyMonads
 using Base: Callable
 
-export Either, Left, Right, @either, fromleft, fromright, isleft, isright, matchleft, matchright, lefts, rights, partitioneither
+export Either, Left, Right, @Either, @either, fromleft, fromright, isleft, isright, matchleft, matchright, lefts, rights, partitioneither
 
 struct EitherClass <: HolyMonads.MonadClass end
 """
@@ -49,6 +49,25 @@ See also [`EitherType`](@ref) and [`Left`](@ref).
 struct Right{R<:Any} <: EitherType
     value::R
 end
+
+"""
+    @Either
+    @Either{L, R}
+
+Type macro for `EitherType` for convenience.
+`@Either` is equivalent to `Union{Left, Right}`.
+`@Either{L, R}` is equivalent to `Union{Left{L}, Right{R}}`.
+See also [`EitherType`](@ref), [`Left`](@ref), and [`Right`](@ref).
+"""
+macro Either()
+    Union{Left, Right}
+end
+macro Either(ex)
+    Meta.isexpr(ex, :braces) && length(ex.args) == 2 || throw(ArgumentError("@Either expects two type parameters like `@Either{L, R}`"))
+    esc(:(Union{HolyMonads.EitherMonad.Left{$(ex.args[1])}, HolyMonads.EitherMonad.Right{$(ex.args[2])}}))
+end
+Base.show(io::IO, ::Type{@Either}) = print(io, "@Either")
+Base.show(io::IO, ::Type{@Either{L, R}}) where {L, R} = print(io, "@Either{", L, ", ", R, "}")
 
 HolyMonads.monadtype(::Type{EitherClass}) = EitherType
 HolyMonads.MonadClass(::Type{<:EitherType}) = Either

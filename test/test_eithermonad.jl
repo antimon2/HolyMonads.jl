@@ -108,6 +108,12 @@ end
         @test rights(eithers) == [1, 3]
         @test partitioneither(eithers) == ([2, 4], [1, 3])
     end
+
+    @testset "@Either" begin
+        @test @Either{String, Int} <: (@Either) <: HolyMonads.EitherMonad.EitherType
+        @test Right(10) isa @Either{String, Int}
+        @test Left("Error") isa @Either{String, Int}
+    end
 end
 
 end  # module
