@@ -32,6 +32,11 @@ using Test
     @test List(Int).mbind(x -> [x, x + 1], [1, 2, 3]) == [1, 2, 2, 3, 3, 4]
     @test List.mbind(x -> [x, 2x], [1, 2, 3]) == [1, 2, 2, 4, 3, 6]
 
+    @test HolyMonads.ispure([1, 2, 3]) === true
+    @test HolyMonads.unpure([1, 2, 3]) == 1
+    @test HolyMonads.ispure([]) === false
+    @test_throws BoundsError HolyMonads.unpure([])
+
     result_do1 = @do List(Int) begin
         a ← [1, 2]
         b ← [3, 4]

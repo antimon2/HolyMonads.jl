@@ -28,6 +28,10 @@ HolyMonads.unit(::IdentityClass, x) = x
 # mbind
 HolyMonads.mbind(f::Callable, ::IdentityClass, m) = f(m)
 
+# ispure/unpure
+HolyMonads.ispure(::IdentityClass, ::Any) = true
+HolyMonads.unpure(::IdentityClass, m) = m
+
 """
     @identity begin ～ end
     @identity() do ～ end

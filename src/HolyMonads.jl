@@ -3,6 +3,7 @@ module HolyMonads
 using Base: Callable
 
 export MonadClass, MonadPlusClass, monadtype, unit, mjoin, fmap, mbind, mzero, mplus, @do, liftM
+export miterator, @for
 
 # supertype of MonadClass-trait
 """
@@ -202,10 +203,12 @@ function mplus end
 
 # do syntax
 """
+    @do block
     @do Monad block
     Monad.@do block
 
-do notation for monads. a.k.a. computation expressions.
+do notation for monads. a.k.a. computation expressions.  
+If the context in the `block` body is clear, `Monad` can be omitted.
 
 # Example
 
@@ -214,7 +217,15 @@ julia> using HolyMonads
 
 julia> using HolyMonads.MaybeMonad
 
-julia> result = Maybe.@do begin
+julia> result = @do begin
+           a ← Some(1)
+           b ← Some(2)
+           return a + b
+       end
+Some(3)
+
+julia> # same as above
+       result = Maybe.@do begin
            a ← Some(1)
            b ← Some(2)
            return a + b
@@ -222,8 +233,39 @@ julia> result = Maybe.@do begin
 Some(3)
 ```
 """
+macro var"do"(ex)
+    _monad_do_wo_monadclass(ex)
+end
 macro var"do"(M, ex)
     _monad_do(esc(M), ex)
+end
+
+function _monad_do_wo_monadclass(ex)
+    org_lines = Base.is_expr(ex, :block) ? ex.args : Any[ex]
+    lines = _desugar_wo_monadclass(Any[], org_lines...)
+    Expr(:let, Expr(:block), Expr(:block, lines...))
+end
+
+_desugar_wo_monadclass(lines::Vector{Any}) = lines
+_desugar_wo_monadclass(lines::Vector{Any}, line, remain_lines...) =
+    _desugar_wo_monadclass(push!(lines, line), remain_lines...)
+function _desugar_wo_monadclass(lines::Vector{Any}, line::Expr, remain_lines...)
+    _Self = @__MODULE__  # == HolyMonads
+    if line.head === :call && line.args[1] === :(←)
+        # mbind
+        body = Expr(:block, remain_lines...)
+        result = esc(quote
+            rightval=$(line.args[3])
+            M = $_Self.MonadClass(rightval)
+            mbind(M, rightval) do $(line.args[2])
+                $_Self.@do M $body
+            end
+        end)
+        push!(lines, result)
+    else
+        # TODO: support other expressions
+        _desugar_wo_monadclass(push!(lines, line), remain_lines...)
+    end
 end
 
 function _monad_do(M, ex)
@@ -314,6 +356,54 @@ function liftM(f::Callable, M::MonadClass, args::Vararg{T, N}) where {T, N}
     _rec(f, M, args, N, 1)
 end
 
+"""
+    ispure(t)
+    ispure(::MonadClass, t)
+
+Utility function to determine if the monadic context `t` is pure, i.e., contextual.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> ispure(Maybe, Some(1)) === ispure(Some(1)) === true
+true
+
+julia> ispure(Maybe, nothing) === ispure(nothing) === false
+true
+```
+"""
+ispure(t) = ispure(MonadClass(t), t)
+ispure(::MT, t) where {MT <: MonadClass} = (t::monadtype(MT); true)  # return. true for default implementation.
+
+"""
+    unpure(t)
+    unpure(::MonadClass, t)
+
+Utility function to extract value wrapped by the monadic context.  
+Throws an error if `t` is not pure.
+
+# Example
+
+```julia-repl
+julia> using HolyMonads
+
+julia> using HolyMonads.MaybeMonad
+
+julia> unpure(Maybe, Some(1)) == unpure(Some(1)) == 1
+true
+```
+"""
+unpure(t) = unpure(MonadClass(t), t)
+unpure(::MT, t::M) where {MT <: MonadClass, M} = (t::monadtype(MT); error(lazy"Not supported for MonadClass $(MT) and monadtype $(M)"))
+
+# monad iterator
+include("iterator.jl")
+import .MonadIterators: miterator, @for
+
 # Identity MonadClass
 include("IdentityMonad.jl")
 
@@ -363,7 +453,7 @@ function Base.getproperty(M::MonadClass, name::Symbol)
     if name === :monadtype
         return HolyMonads.monadtype(M)
     end
-    if name in [:unit, :mjoin]
+    if name in [:unit, :mjoin, :miterator]
         _fn = getfield(HolyMonads, name)
         return FixM1(_fn, M)
     end
@@ -371,14 +461,16 @@ function Base.getproperty(M::MonadClass, name::Symbol)
         _fn = getfield(HolyMonads, name)
         return FixM2(_fn, M)
     end
-    if name === Symbol("@do")
-        return FixM3(HolyMonads.var"@do", M)
+    if name in [Symbol("@do"), Symbol("@for")]
+        _macro = getfield(HolyMonads, name)
+        return FixM3(_macro, M)
     end
     # return getfield(M, name)
     return @invoke getproperty(M::Any, name)
 end
 Base.propertynames(M::MonadClass) = 
-    ((@invoke Base.propertynames(M::Any))..., :monadtype, :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM)
+    ((@invoke Base.propertynames(M::Any))..., :monadtype, :unit, :mjoin, :fmap, :mbind, Symbol("@do"), :liftM,
+        :miterator, Symbol("@for"))
 
 # override `getproperty` to support `A_MonadPlus.[mzero, mplus]`
 function Base.getproperty(M::MonadPlusClass, name::Symbol)
@@ -386,7 +478,6 @@ function Base.getproperty(M::MonadPlusClass, name::Symbol)
         return HolyMonads.mzero(M)
     end
     if name === :mplus
-        # return (args...) -> HolyMonads.mplus(M, args...)
         return FixM1(HolyMonads.mplus, M)
     end
     return @invoke getproperty(M::MonadClass, name)

@@ -75,6 +75,11 @@ end
 
 # # mbind  # use default implementation
 
+# ispure/unpure
+HolyMonads.ispure(::EitherClass, ::Right) = true
+HolyMonads.unpure(::EitherClass, r::Right) = r.value
+HolyMonads.ispure(::EitherClass, ::Left) = false
+
 """
     @either begin ～ end
     @either() do ～ end
