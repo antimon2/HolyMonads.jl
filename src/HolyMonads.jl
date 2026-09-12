@@ -358,7 +358,7 @@ end
 
 """
     ispure(t)
-    ispure(::MT, t)
+    ispure(::MonadClass, t)
 
 Utility function to determine if the monadic context `t` is pure, i.e., contextual.
 
@@ -381,7 +381,7 @@ ispure(::MT, t) where {MT <: MonadClass} = (t::monadtype(MT); true)  # return. t
 
 """
     unpure(t)
-    unpure(::MT, t)
+    unpure(::MonadClass, t)
 
 Utility function to extract value wrapped by the monadic context.  
 Throws an error if `t` is not pure.

@@ -5,6 +5,12 @@ import ..HolyMonads: HolyMonads, MonadClass
 
 export miterator, @for
 
+"""
+    miterator(m::MT)
+    miterator(M::MonadClass, m::MT)
+
+return an iterator for the monadic value `m` of type `MT`.
+"""
 function miterator end
 
 struct MonadIterator{MC <: MonadClass, MT}
